@@ -1,26 +1,26 @@
-region_name,manager_name
-Canada,
-Caribbean,Marilène Rousseau
-Central Africa,Andile Ihejirika
-Central America,Nicodemo Bautista
-Central Asia,Cansu Peynirci
-Central US,Lon Bonher
-Eastern Africa,Wasswa Ahmed
-Eastern Asia,Hadia Bousaid
-Eastern Canada,Lynne Marchand
-Eastern Europe,Oxana Lagunov
-Eastern US,Dolores Davis
-North Africa,Lindiwe Afolayan
-Northern Europe,Miina Nylund
-Oceania,Kauri Anaru
-South America,Vasco Magalhães
-Southeastern Asia,Preecha Metharom
-Southern Africa,Nora Cuijper
-Southern Asia,Chandrakant Chaudhri
-Southern Europe,Gavino Bove
-Southern US,Flannery Newton
-Western Africa,Katlego Akosua
-Western Asia,Kaoru Xun
-Western Canada,Angela Jephson
-Western Europe,Gilbert Wolff
-Western US,Derrick Snyders
+region_id,region_name,manager_id
+1,Canada,
+2,Caribbean,17
+3,Central Africa,1
+4,Central America,19
+5,Central Asia,3
+6,Central US,15
+7,Eastern Africa,24
+8,Eastern Asia,10
+9,Eastern Canada,16
+10,Eastern Europe,21
+11,Eastern US,6
+12,North Africa,14
+13,Northern Europe,18
+14,Oceania,13
+15,South America,23
+16,Southeastern Asia,22
+17,Southern Africa,20
+18,Southern Asia,4
+19,Southern Europe,8
+20,Southern US,7
+21,Western Africa,12
+22,Western Asia,11
+23,Western Canada,2
+24,Western Europe,9
+25,Western US,5

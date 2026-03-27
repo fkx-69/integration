@@ -1,18 +1,18 @@
-sub_category_name,category_name
-Accessories,Technology
-Appliances,Office Supplies
-Art,Office Supplies
-Binders,Office Supplies
-Bookcases,Furniture
-Chairs,Furniture
-Copiers,Technology
-Envelopes,Office Supplies
-Fasteners,Office Supplies
-Furnishings,Furniture
-Labels,Office Supplies
-Machines,Technology
-Paper,Office Supplies
-Phones,Technology
-Storage,Office Supplies
-Supplies,Office Supplies
-Tables,Furniture
+sub_category_id,sub_category_name,category_id
+1,Accessories,3
+2,Appliances,2
+3,Art,2
+4,Binders,2
+5,Bookcases,1
+6,Chairs,1
+7,Copiers,3
+8,Envelopes,2
+9,Fasteners,2
+10,Furnishings,1
+11,Labels,2
+12,Machines,3
+13,Paper,2
+14,Phones,3
+15,Storage,2
+16,Supplies,2
+17,Tables,1

@@ -4,17 +4,27 @@
 
 Ce dossier regroupe les livrables finaux a utiliser pour construire une base de donnees PostgreSQL normalisee a partir des fichiers source `orders.csv`, `people.csv` et `returns.csv`.
 
-L'objectif n'est plus d'avoir un seul fichier analytique a plat, mais un ensemble de tables separees qui respectent une logique relationnelle plus propre, proche de la troisieme forme normale (3NF pragmatique).
+La structure a ete renforcee pour aller plus loin dans la normalisation :
+
+- `category`, `sub_category` et `region` ont maintenant leurs propres identifiants
+- une table `managers` a ete ajoutee
+- la localisation a ete decoupee en plusieurs niveaux
+- les tables dependantes utilisent des IDs au lieu des noms quand cela est pertinent
 
 ## Contenu du dossier
 
-Ce dossier doit contenir les fichiers suivants :
+Le dossier contient les fichiers suivants :
 
 - `customers.csv`
 - `categories.csv`
 - `sub_categories.csv`
 - `products.csv`
+- `managers.csv`
 - `regions.csv`
+- `markets.csv`
+- `countries.csv`
+- `states.csv`
+- `cities.csv`
 - `locations.csv`
 - `orders_normalized.csv`
 - `order_items.csv`
@@ -22,13 +32,9 @@ Ce dossier doit contenir les fichiers suivants :
 - `normalization_anomalies.csv`
 - `create_sales_schema.sql`
 
-## Logique du schema
-
-La structure a ete pensee pour separer les grandes entites metier et limiter les redondances.
+## Explication des tables
 
 ### 1. `customers.csv`
-
-Cette table contient les clients.
 
 Colonnes :
 
@@ -36,87 +42,111 @@ Colonnes :
 - `customer_name`
 - `segment`
 
-Pourquoi cette separation :
-
-Dans le fichier source, les informations du client se repetent sur de nombreuses lignes de commande. Les sortir dans une table dediee permet d'eviter cette repetition et de faire dependre `customer_name` et `segment` uniquement de `customer_id`.
+Cette table conserve la cle metier client et evite de repeter les informations descriptives du client dans les commandes.
 
 ### 2. `categories.csv`
 
-Cette table contient les grandes categories de produits.
+Colonnes :
 
-Colonne :
-
+- `category_id`
 - `category_name`
 
-Pourquoi cette separation :
-
-Le nombre de categories est faible et stable. Les isoler permet de poser une hierarchie produit plus propre.
+Le nom de categorie reste unique, mais un identifiant technique est maintenant introduit pour fiabiliser les references vers les autres tables.
 
 ### 3. `sub_categories.csv`
 
-Cette table contient les sous-categories de produits.
-
 Colonnes :
 
+- `sub_category_id`
 - `sub_category_name`
-- `category_name`
+- `category_id`
 
-Pourquoi cette separation :
-
-Une sous-categorie depend d'une categorie. Cela permet d'exprimer explicitement la relation entre les deux niveaux.
+La sous-categorie depend de la categorie. La table n'utilise plus le nom de categorie comme reference externe directe.
 
 ### 4. `products.csv`
-
-Cette table contient les produits.
 
 Colonnes :
 
 - `product_id`
 - `product_name`
-- `sub_category_name`
+- `sub_category_id`
 
-Pourquoi cette separation :
+Le produit garde sa cle metier `product_id`, mais il reference desormais la sous-categorie via son identifiant.
 
-Les informations produit sont repetitives dans les lignes de vente. Les isoler dans `products` permet de faire dependre le nom du produit et sa sous-categorie uniquement de `product_id`.
-
-### 5. `regions.csv`
-
-Cette table contient les regions et, quand l'information existe, le responsable associe.
+### 5. `managers.csv`
 
 Colonnes :
 
-- `region_name`
+- `manager_id`
 - `manager_name`
 
-Pourquoi cette separation :
+Cette table isole les managers. Leur nom n'est plus stocke directement dans `regions`.
 
-La region est une dimension stable. Le responsable de region depend de la region, pas d'une commande ou d'une ligne de commande.
+### 6. `regions.csv`
 
-Remarque :
+Colonnes :
 
-Certaines regions presentes dans les ventes ne sont pas renseignees dans `people.csv`. Dans ce cas, `manager_name` reste vide au lieu de supprimer des donnees.
+- `region_id`
+- `region_name`
+- `manager_id`
 
-### 6. `locations.csv`
+La region a maintenant son propre identifiant. Quand un manager existe, `manager_id` pointe vers la table `managers`. Quand l'information manque dans la source, `manager_id` reste vide.
 
-Cette table contient les localisations consolidees.
+### 7. `markets.csv`
+
+Colonnes :
+
+- `market_id`
+- `market_name`
+
+Cette table represente le niveau marche dans la hierarchie geographique.
+
+### 8. `countries.csv`
+
+Colonnes :
+
+- `country_id`
+- `country_name`
+- `market_id`
+
+Chaque pays depend d'un marche.
+
+### 9. `states.csv`
+
+Colonnes :
+
+- `state_id`
+- `state_name`
+- `country_id`
+
+L'etat depend du pays. Un meme nom d'etat peut exister dans plusieurs pays, d'ou l'utilisation d'un identifiant technique.
+
+### 10. `cities.csv`
+
+Colonnes :
+
+- `city_id`
+- `city_name`
+- `state_id`
+- `region_id`
+
+La ville depend de l'etat, et la region est referencee ici par `region_id` au lieu de conserver le nom de region dans les tables de localisation.
+
+### 11. `locations.csv`
 
 Colonnes :
 
 - `location_id`
-- `country`
-- `state`
-- `city`
+- `city_id`
 - `postal_code`
-- `region_name`
-- `market`
 
-Pourquoi cette separation :
+La table `locations` a ete normalisee. Elle ne porte plus directement `country`, `state`, `city`, `region` ou `market`. Ces informations se retrouvent en remontant la chaine :
 
-La geographie n'avait pas de cle metier simple et stable dans les CSV. Une cle technique `location_id` a donc ete introduite. Cela permet d'eviter de dupliquer toute la localisation sur chaque commande.
+`locations -> cities -> states -> countries -> markets`
 
-### 7. `orders_normalized.csv`
+Cela reduit fortement la redondance geographique.
 
-Cette table represente l'entete de commande.
+### 12. `orders_normalized.csv`
 
 Colonnes :
 
@@ -128,13 +158,9 @@ Colonnes :
 - `ship_mode`
 - `order_priority`
 
-Pourquoi cette separation :
+La commande reste liee au client et a la localisation par identifiant.
 
-Les informations de commande doivent dependre de la commande, pas de la ligne de commande. Cette table isole donc les attributs communs a une commande.
-
-### 8. `order_items.csv`
-
-Cette table represente les lignes de commande.
+### 13. `order_items.csv`
 
 Colonnes :
 
@@ -147,25 +173,17 @@ Colonnes :
 - `profit`
 - `shipping_cost`
 
-Pourquoi cette separation :
+Cette table conserve le grain ligne de commande.
 
-Le fichier source `orders.csv` est en realite une table de lignes de commande. Cette table conserve ce niveau de granularite, tout en reliant chaque ligne a une commande et a un produit.
-
-### 9. `order_returns.csv`
-
-Cette table contient les commandes retournees.
+### 14. `order_returns.csv`
 
 Colonne :
 
 - `order_id`
 
-Pourquoi cette separation :
+Cette table modele les retours au niveau de la commande.
 
-Les retours sont portes au niveau de la commande et non de la ligne de commande. Cette table permet de modeliser ce fait metier proprement.
-
-### 10. `normalization_anomalies.csv`
-
-Ce fichier journalise les anomalies rencontrees lors de la normalisation.
+### 15. `normalization_anomalies.csv`
 
 Colonnes :
 
@@ -176,48 +194,35 @@ Colonnes :
 - `chosen_tuple`
 - `candidate_tuples`
 
-Pourquoi ce fichier existe :
+Ce fichier journalise les cas ou un meme `order_id` avait plusieurs entetes contradictoires dans la source. Le pipeline applique une regle deterministe pour choisir le tuple conserve, puis garde une trace du conflit ici.
 
-Certaines commandes source partagent le meme `order_id` mais presentent des valeurs contradictoires sur l'entete de commande, par exemple sur le client, la ville, la region ou le mode d'expedition. Pour normaliser la base sans perdre de donnees, une regle deterministe a ete appliquee :
+## Ordre d'import recommande
 
-- on compare les tuples d'entete complets
-- on retient le tuple le plus frequent
-- en cas d'egalite, on prend celui de la plus petite `row_id`
-
-Toutes les commandes conflictuelles sont journalisees ici pour garder une trace des arbitrages effectues.
-
-## Script SQL
-
-Le fichier `create_sales_schema.sql` permet de creer les tables PostgreSQL, les cles primaires, les cles etrangeres et les index principaux.
-
-Le schema SQL est concu pour une base vide dediee uniquement a ces donnees.
-
-## Ordre d'import recommande dans PostgreSQL
-
-Voici l'ordre dans lequel les CSV doivent etre importes apres execution du script SQL :
+Apres execution de `create_sales_schema.sql`, importer les fichiers dans cet ordre :
 
 1. `categories.csv`
 2. `sub_categories.csv`
-3. `customers.csv`
+3. `managers.csv`
 4. `regions.csv`
-5. `locations.csv`
-6. `products.csv`
-7. `orders_normalized.csv`
-8. `order_items.csv`
-9. `order_returns.csv`
+5. `markets.csv`
+6. `countries.csv`
+7. `states.csv`
+8. `cities.csv`
+9. `locations.csv`
+10. `customers.csv`
+11. `products.csv`
+12. `orders_normalized.csv`
+13. `order_items.csv`
+14. `order_returns.csv`
 
-Cet ordre respecte les dependances entre tables et evite les violations de cles etrangeres.
+## Points importants
 
-## Points importants avant import
-
-- `postal_code` doit rester en texte
-- `order_date` et `ship_date` doivent etre interpretees comme des dates
-- `row_id` doit etre charge en entier long
-- les colonnes monetaires doivent etre chargees en numerique
-- les valeurs nulles de `manager_name` sont normales pour certaines regions
+- `category_id`, `sub_category_id`, `manager_id`, `region_id`, `market_id`, `country_id`, `state_id`, `city_id` et `location_id` sont des identifiants techniques stables dans cette livraison
+- `product_id`, `customer_id`, `order_id` et `row_id` restent des cles metier
+- `postal_code` reste en texte nullable
+- `order_date` et `ship_date` doivent etre importees comme des dates
+- les montants doivent etre importes en numerique
 
 ## Conclusion
 
-Ce dossier constitue la sortie la plus adaptee si l'objectif est de construire directement une base PostgreSQL normalisee a partir des CSV initiaux.
-
-Le fichier `sales_final_clean.csv` reste utile pour des analyses rapides, mais ce dossier est le bon point d'entree pour une base relationnelle propre.
+Ce dossier constitue la version la plus normalisee du projet a ce stade. Il est mieux adapte a une vraie base relationnelle PostgreSQL que la version precedente basee sur une table `locations` plus denormalisee et sur des references textuelles pour les categories, sous-categories, regions et managers.

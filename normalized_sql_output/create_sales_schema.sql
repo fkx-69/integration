@@ -2,23 +2,89 @@
 -- Recommended import order:
 -- 1. categories
 -- 2. sub_categories
--- 3. customers
+-- 3. managers
 -- 4. regions
--- 5. locations
--- 6. products
--- 7. orders_normalized
--- 8. order_items
--- 9. order_returns
+-- 5. markets
+-- 6. countries
+-- 7. states
+-- 8. cities
+-- 9. locations
+-- 10. customers
+-- 11. products
+-- 12. orders_normalized
+-- 13. order_items
+-- 14. order_returns
 
 CREATE TABLE categories (
-    category_name TEXT PRIMARY KEY
+    category_id INTEGER PRIMARY KEY,
+    category_name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE sub_categories (
-    sub_category_name TEXT PRIMARY KEY,
-    category_name TEXT NOT NULL,
+    sub_category_id INTEGER PRIMARY KEY,
+    sub_category_name TEXT NOT NULL UNIQUE,
+    category_id INTEGER NOT NULL,
     CONSTRAINT fk_sub_categories_category
-        FOREIGN KEY (category_name) REFERENCES categories (category_name)
+        FOREIGN KEY (category_id) REFERENCES categories (category_id)
+);
+
+CREATE TABLE managers (
+    manager_id INTEGER PRIMARY KEY,
+    manager_name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE regions (
+    region_id INTEGER PRIMARY KEY,
+    region_name TEXT NOT NULL UNIQUE,
+    manager_id INTEGER NULL,
+    CONSTRAINT fk_regions_manager
+        FOREIGN KEY (manager_id) REFERENCES managers (manager_id)
+);
+
+CREATE TABLE markets (
+    market_id INTEGER PRIMARY KEY,
+    market_name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE countries (
+    country_id INTEGER PRIMARY KEY,
+    country_name TEXT NOT NULL UNIQUE,
+    market_id INTEGER NOT NULL,
+    CONSTRAINT fk_countries_market
+        FOREIGN KEY (market_id) REFERENCES markets (market_id)
+);
+
+CREATE TABLE states (
+    state_id INTEGER PRIMARY KEY,
+    state_name TEXT NOT NULL,
+    country_id INTEGER NOT NULL,
+    CONSTRAINT fk_states_country
+        FOREIGN KEY (country_id) REFERENCES countries (country_id),
+    CONSTRAINT uq_states_name_per_country
+        UNIQUE (state_name, country_id)
+);
+
+CREATE TABLE cities (
+    city_id INTEGER PRIMARY KEY,
+    city_name TEXT NOT NULL,
+    state_id INTEGER NOT NULL,
+    region_id INTEGER NOT NULL,
+    CONSTRAINT fk_cities_state
+        FOREIGN KEY (state_id) REFERENCES states (state_id),
+    CONSTRAINT fk_cities_region
+        FOREIGN KEY (region_id) REFERENCES regions (region_id),
+    CONSTRAINT uq_cities_name_per_state
+        UNIQUE (city_name, state_id)
+);
+
+CREATE TABLE locations (
+    location_id INTEGER PRIMARY KEY,
+    city_id INTEGER NOT NULL,
+    postal_code TEXT NULL,
+    CONSTRAINT fk_locations_city
+        FOREIGN KEY (city_id) REFERENCES cities (city_id),
+    CONSTRAINT uq_locations_city_postal
+        UNIQUE (city_id, postal_code)
 );
 
 CREATE TABLE customers (
@@ -27,31 +93,12 @@ CREATE TABLE customers (
     segment TEXT NOT NULL
 );
 
-CREATE TABLE regions (
-    region_name TEXT PRIMARY KEY,
-    manager_name TEXT NULL
-);
-
-CREATE TABLE locations (
-    location_id INTEGER PRIMARY KEY,
-    country TEXT NOT NULL,
-    state TEXT NOT NULL,
-    city TEXT NOT NULL,
-    postal_code TEXT NULL,
-    region_name TEXT NOT NULL,
-    market TEXT NOT NULL,
-    CONSTRAINT fk_locations_region
-        FOREIGN KEY (region_name) REFERENCES regions (region_name),
-    CONSTRAINT uq_locations_natural
-        UNIQUE (country, state, city, postal_code, region_name, market)
-);
-
 CREATE TABLE products (
     product_id TEXT PRIMARY KEY,
     product_name TEXT NOT NULL,
-    sub_category_name TEXT NOT NULL,
+    sub_category_id INTEGER NOT NULL,
     CONSTRAINT fk_products_sub_category
-        FOREIGN KEY (sub_category_name) REFERENCES sub_categories (sub_category_name)
+        FOREIGN KEY (sub_category_id) REFERENCES sub_categories (sub_category_id)
 );
 
 CREATE TABLE orders_normalized (
@@ -89,14 +136,29 @@ CREATE TABLE order_returns (
         FOREIGN KEY (order_id) REFERENCES orders_normalized (order_id)
 );
 
-CREATE INDEX idx_sub_categories_category_name
-    ON sub_categories (category_name);
+CREATE INDEX idx_sub_categories_category_id
+    ON sub_categories (category_id);
 
-CREATE INDEX idx_locations_region_name
-    ON locations (region_name);
+CREATE INDEX idx_regions_manager_id
+    ON regions (manager_id);
 
-CREATE INDEX idx_products_sub_category_name
-    ON products (sub_category_name);
+CREATE INDEX idx_countries_market_id
+    ON countries (market_id);
+
+CREATE INDEX idx_states_country_id
+    ON states (country_id);
+
+CREATE INDEX idx_cities_state_id
+    ON cities (state_id);
+
+CREATE INDEX idx_cities_region_id
+    ON cities (region_id);
+
+CREATE INDEX idx_locations_city_id
+    ON locations (city_id);
+
+CREATE INDEX idx_products_sub_category_id
+    ON products (sub_category_id);
 
 CREATE INDEX idx_orders_customer_id
     ON orders_normalized (customer_id);
